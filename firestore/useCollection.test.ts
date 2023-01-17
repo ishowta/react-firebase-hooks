@@ -1,4 +1,4 @@
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 
 import { db } from '../test/firebase';
 import { act, renderHook } from '@testing-library/react-hooks';
@@ -44,6 +44,45 @@ describe('useCollectionData hook', () => {
 
     // assert
     expect(result.current.collectionData?.[0]).toEqual({ name: 'bo' });
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBe(undefined);
+
+    // clean up
+    unmount();
+  });
+
+  test('unupdated document instance is same as before', async () => {
+    // arrange
+    const collectionID = Math.random().toString();
+    const documentRef1 = await addDoc(collection(db, collectionID), { a: '1' });
+    const documentRef2 = doc(collection(db, collectionID));
+
+    // act
+    const { result, unmount, waitFor } = renderHook(() => {
+      const [collectionData, loading, error] = useCollectionData(
+        collection(db, collectionID)
+      );
+      return {
+        collectionData,
+        loading,
+        error,
+      };
+    });
+
+    await waitFor(() => result.current.loading === false);
+
+    const firstFetchedDocument1 = result.current.collectionData?.[0];
+
+    await act(async () => {
+      await setDoc(documentRef2, { b: '2' });
+
+      await waitFor(() => result.current.collectionData?.length === 2);
+    });
+
+    //assert
+    expect(firstFetchedDocument1).toEqual({ a: '1' });
+    expect(result.current.collectionData?.[0]).toBe(firstFetchedDocument1);
+    expect(result.current.collectionData?.[1]).toEqual({ b: '2' });
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe(undefined);
 
