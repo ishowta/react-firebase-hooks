@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import { usePrevious } from './usePrevious';
+import { useChanged } from './useChanged';
 
 export type LoadingValue<T, E> = {
   error?: E;
@@ -84,13 +84,7 @@ export default <T, E>(
   }, deps);
 
   // Reflect the value immediately when deps changed
-  const previousDeps = usePrevious(deps);
-  const isDepsChanged =
-    (previousDeps == null && deps != null) ||
-    (previousDeps != null && deps == null) ||
-    (previousDeps != null &&
-      deps != null &&
-      deps.some((dep, i) => dep !== previousDeps[i]));
+  const isDepsChanged = useChanged(deps);
   const state = isDepsChanged
     ? { value: undefined, loading: true, error: undefined }
     : stateInternal;
