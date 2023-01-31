@@ -1,69 +1,736 @@
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
-
-import { db } from '../test/firebase';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  QuerySnapshot,
+  FirestoreError,
+  setDoc,
+  updateDoc,
+  query,
+  orderBy,
+  Query,
+} from 'firebase/firestore';
 import { act, renderHook } from '@testing-library/react-hooks';
-import { useCollectionData } from './useCollection';
-import { useState } from 'react';
+import {
+  useCollection,
+  useCollectionData,
+  useCollectionOnce,
+  useCollectionDataOnce,
+} from './useCollection';
+import { useMemo, useState } from 'react';
+import { db, env } from '../test/firebase';
+import { IDOptions, InitialValueOptions, OnceOptions, Options } from './types';
 
-describe('useCollectionData hook', () => {
-  test('begins in loading state', async () => {
-    // arrange
-    const collectionID = Math.random().toString();
-    await addDoc(collection(db, collectionID), {});
+type UseAnyCollection = <T>(
+  ref: Query<T>
+) => [T[] | undefined, boolean, FirestoreError | undefined];
 
-    // act
-    const { result, unmount } = renderHook(() => {
-      const [collectionData, loading, error] = useCollectionData(
-        collection(db, collectionID)
-      );
-      return { collectionData, loading, error };
-    });
+const eachAnyUseCollection = (() => {
+  const useCollectionWrapper: UseAnyCollection = (ref) => {
+    const [snapshot, loading, error] = useCollection(ref);
+    const data = useMemo(() => {
+      if (snapshot) {
+        return snapshot.docs.map((doc) => doc.data());
+      }
+    }, [snapshot]);
+    return [data, loading, error];
+  };
+  const useCollectionOnceWrapper: UseAnyCollection = (ref) => {
+    const [snapshot, loading, error] = useCollectionOnce(ref);
+    const data = useMemo(() => {
+      if (snapshot) {
+        return snapshot.docs.map((doc) => doc.data());
+      }
+    }, [snapshot]);
+    return [data, loading, error];
+  };
+  const useCollectionDataWrapper: UseAnyCollection = (ref) => {
+    const [data, loading, error] = useCollectionData(ref);
+    return [data, loading, error];
+  };
+  const useCollectionDataOnceWrapper: UseAnyCollection = (ref) => {
+    const [data, loading, error] = useCollectionDataOnce(ref);
+    return [data, loading, error];
+  };
 
-    //assert
-    expect(result.current.collectionData).toBe(undefined);
-    expect(result.current.loading).toBe(true);
-    expect(result.current.error).toBe(undefined);
+  return [
+    { fnName: 'useCollection', useAnyCollection: useCollectionWrapper },
+    {
+      fnName: 'useCollectionOnce',
+      useAnyCollection: useCollectionOnceWrapper,
+    },
+    { fnName: 'useCollectionData', useAnyCollection: useCollectionDataWrapper },
+    {
+      fnName: 'useCollectionDataOnce',
+      useAnyCollection: useCollectionDataOnceWrapper,
+    },
+  ] as const;
+})();
 
-    // clean up
-    unmount();
+type UseAnyNotOnceCollection = <T>(
+  ref: Query<T>,
+  options?: Options
+) => [T[] | undefined, boolean, FirestoreError | undefined];
+
+const eachAnyNotOnceUseCollection = (() => {
+  const useCollectionWrapper: UseAnyNotOnceCollection = (ref, options) => {
+    const [snapshot, loading, error] = useCollection(ref, options);
+    const data = useMemo(() => {
+      if (snapshot) {
+        return snapshot.docs.map((doc) => doc.data());
+      }
+    }, [snapshot]);
+    return [data, loading, error];
+  };
+  const useCollectionDataWrapper: UseAnyNotOnceCollection = (ref, options) => {
+    const [data, loading, error] = useCollectionData(ref, options);
+    return [data, loading, error];
+  };
+
+  return [
+    { fnName: 'useCollection', useAnyNotOnceCollection: useCollectionWrapper },
+    {
+      fnName: 'useCollectionData',
+      useAnyNotOnceCollection: useCollectionDataWrapper,
+    },
+  ] as const;
+})();
+
+type UseAnyOnceCollection = <T>(
+  ref: Query<T>,
+  options?: OnceOptions
+) => [T[] | undefined, boolean, FirestoreError | undefined];
+
+const eachAnyOnceUseCollection = (() => {
+  const useCollectionOnceWrapper: UseAnyOnceCollection = (ref, options) => {
+    const [snapshot, loading, error] = useCollectionOnce(ref, options);
+    const data = useMemo(() => {
+      if (snapshot) {
+        return snapshot.docs.map((doc) => doc.data());
+      }
+    }, [snapshot]);
+    return [data, loading, error];
+  };
+  const useCollectionDataOnceWrapper: UseAnyOnceCollection = (ref, options) => {
+    const [data, loading, error] = useCollectionDataOnce(ref, options);
+    return [data, loading, error];
+  };
+
+  return [
+    {
+      fnName: 'useCollectionOnce',
+      useAnyOnceCollection: useCollectionOnceWrapper,
+    },
+    {
+      fnName: 'useCollectionDataOnce',
+      useAnyOnceCollection: useCollectionDataOnceWrapper,
+    },
+  ] as const;
+})();
+
+type UseAnySnapshotCollection = <T>(
+  ref: Query<T>
+) => [QuerySnapshot<T> | undefined, boolean, FirestoreError | undefined];
+
+const eachAnySnapshotUseCollection = (() => {
+  const useCollectionWrapper: UseAnySnapshotCollection = (ref) => {
+    const [snapshot, loading, error] = useCollection(ref);
+    return [snapshot, loading, error];
+  };
+  const useCollectionOnceWrapper: UseAnySnapshotCollection = (ref) => {
+    const [snapshot, loading, error] = useCollectionOnce(ref);
+    return [snapshot, loading, error];
+  };
+
+  return [
+    { fnName: 'useCollection', useAnySnapshotCollection: useCollectionWrapper },
+    {
+      fnName: 'useCollectionOnce',
+      useAnySnapshotCollection: useCollectionOnceWrapper,
+    },
+  ] as const;
+})();
+
+type UseAnyDataCollection = <T>(
+  ref: Query<T>,
+  options?: IDOptions<T> & InitialValueOptions<T[]>
+) => [
+  T[] | undefined,
+  boolean,
+  FirestoreError | undefined,
+  QuerySnapshot<T> | undefined
+];
+
+const eachAnyDataUseCollection = (() => {
+  const useCollectionDataWrapper: UseAnyDataCollection = (ref, options) => {
+    const [data, loading, error, snapshot] = useCollectionData(ref, options);
+    return [data, loading, error, snapshot];
+  };
+  const useCollectionDataOnceWrapper: UseAnyDataCollection = (ref, options) => {
+    const [data, loading, error, snapshot] = useCollectionDataOnce(
+      ref,
+      options
+    );
+    return [data, loading, error, snapshot];
+  };
+
+  return [
+    {
+      fnName: 'useCollectionData',
+      useAnyDataCollection: useCollectionDataWrapper,
+    },
+    {
+      fnName: 'useCollectionDataOnce',
+      useAnyDataCollection: useCollectionDataOnceWrapper,
+    },
+  ] as const;
+})();
+
+describe('useCollection hook', () => {
+  beforeEach(async () => {
+    await env.clearFirestore();
   });
 
-  test('loads and returns data from server', async () => {
-    // arrange
-    const collectionID = Math.random().toString();
-    await addDoc(collection(db, collectionID), { name: 'bo' });
+  test.each(eachAnyUseCollection)(
+    'begins in loading state on $fnName',
+    async ({ useAnyCollection }) => {
+      const ref = collection(db, 'test');
 
-    // act
+      const { result, unmount } = renderHook(() => {
+        const [data, loading, error] = useAnyCollection(ref);
+        return { data, loading, error };
+      });
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(true);
+      expect(result.current.data).toBe(undefined);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyUseCollection)(
+    'loads and returns data on $fnName',
+    async ({ useAnyCollection }) => {
+      const ref = collection(db, 'test');
+      await addDoc(ref, { index: 1 });
+
+      const { result, waitFor, unmount } = renderHook(() => {
+        const [data, loading, error] = useAnyCollection(ref);
+        return { data, loading, error };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toEqual([{ index: 1 }]);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyUseCollection)(
+    'loads and returns empty list if no document exists on $fnName',
+    async ({ useAnyCollection }) => {
+      const ref = collection(db, 'test');
+
+      const { result, waitFor, unmount } = renderHook(() => {
+        const [data, loading, error] = useAnyCollection(ref);
+        return { data, loading, error };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toEqual([]);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyUseCollection)(
+    'loads and returns error when permission denied on $fnName',
+    async ({ useAnyCollection }) => {
+      const ref = collection(db, 'private');
+
+      const { result, waitFor, unmount } = renderHook(() => {
+        const [data, loading, error] = useAnyCollection(ref);
+        return { data, loading, error };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.error?.code).toBe('permission-denied');
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toBe(undefined);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyUseCollection)(
+    'reset data and start loading after collectionReference is changed on $fnName',
+    async ({ useAnyCollection }) => {
+      const ref1 = collection(db, 'test');
+      const ref2 = collection(db, 'test2');
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [ref, setRef] = useState(ref1);
+        const [data, loading, error] = useAnyCollection(ref);
+        return {
+          ref,
+          data,
+          loading,
+          error,
+          setRef,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).not.toBe(undefined);
+
+      act(() => {
+        result.current.setRef(ref2);
+      });
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(true);
+      expect(result.current.data).toBe(undefined);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnySnapshotUseCollection)(
+    'nothing happens if replaced to same path ref on $fnName',
+    async ({ useAnySnapshotCollection }) => {
+      const ref1 = collection(db, 'test');
+      const ref2 = collection(db, 'test');
+
+      expect(ref1).not.toBe(ref2);
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [ref, setRef] = useState(ref1);
+        const [snapshot, loading, error] = useAnySnapshotCollection(ref);
+        return {
+          ref,
+          snapshot,
+          loading,
+          error,
+          setRef,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      const prevResult = result.current;
+
+      act(() => {
+        result.current.setRef(ref2);
+      });
+
+      expect(result.current.error).toBe(prevResult.error);
+      expect(result.current.loading).toBe(prevResult.loading);
+      expect(result.current.snapshot).toBe(prevResult.snapshot);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyUseCollection)(
+    'reset error and start loading after collectionReference is changed on $fnName',
+    async ({ useAnyCollection }) => {
+      const ref1 = collection(db, 'private');
+      const ref2 = collection(db, 'test');
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [ref, setRef] = useState(ref1);
+        const [data, loading, error] = useAnyCollection(ref);
+        return {
+          ref,
+          data,
+          loading,
+          error,
+          setRef,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.error).not.toBe(undefined);
+      expect(result.current.loading).toBe(false);
+
+      act(() => {
+        result.current.setRef(ref2);
+      });
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(true);
+      expect(result.current.data).toBe(undefined);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyUseCollection)(
+    'loads and returns data after collectionReference is changed on $fnName',
+    async ({ useAnyCollection }) => {
+      const ref1 = collection(db, 'test');
+      const ref2 = collection(db, 'test2');
+      await addDoc(ref2, { index: 2 });
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [ref, setRef] = useState(ref1);
+        const [data, loading, error] = useAnyCollection(ref);
+        return {
+          ref,
+          data,
+          loading,
+          error,
+          setRef,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      act(() => result.current.setRef(ref2));
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toEqual([{ index: 2 }]);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyNotOnceUseCollection)(
+    'add document after useCollection initialized on $fnName',
+    async ({ useAnyNotOnceCollection }) => {
+      const ref = collection(db, 'test');
+      const docRef = doc(ref);
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [data, loading, error] = useAnyNotOnceCollection(ref);
+        return {
+          data,
+          loading,
+          error,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.data).toEqual([]);
+
+      const prevData = result.current.data;
+
+      await act(async () => {
+        await setDoc(docRef, { index: 1 });
+      });
+
+      await waitFor(() => result.current.data !== prevData);
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toEqual([
+        {
+          index: 1,
+        },
+      ]);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyNotOnceUseCollection)(
+    'update document after useCollection initialized on $fnName',
+    async ({ useAnyNotOnceCollection }) => {
+      const ref = collection(db, 'test');
+      const docRef = await addDoc(ref, { index: 1 });
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [data, loading, error] = useAnyNotOnceCollection(ref);
+        return {
+          data,
+          loading,
+          error,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.data).toEqual([
+        {
+          index: 1,
+        },
+      ]);
+
+      const prevData = result.current.data;
+
+      await act(async () => {
+        await updateDoc(docRef, { index: 2 });
+      });
+
+      await waitFor(() => result.current.data !== prevData);
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toEqual([
+        {
+          index: 2,
+        },
+      ]);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyNotOnceUseCollection)(
+    'swap document after useCollection initialized on $fnName',
+    async ({ useAnyNotOnceCollection }) => {
+      const ref = collection(db, 'test');
+      const docRef1 = doc(ref);
+      const docRef2 = doc(ref);
+      await setDoc(docRef1, { index: 1 });
+      await setDoc(docRef2, { index: 2 });
+      const orderByIndexQuery = query(ref, orderBy('index'));
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [data, loading, error] = useAnyNotOnceCollection(
+          orderByIndexQuery
+        );
+        return {
+          data,
+          loading,
+          error,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.data).toEqual([
+        {
+          index: 1,
+        },
+        {
+          index: 2,
+        },
+      ]);
+
+      const prevData = result.current.data;
+
+      await act(async () => {
+        await updateDoc(docRef1, { index: 3 });
+      });
+
+      await waitFor(() => result.current.data !== prevData);
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toEqual([
+        {
+          index: 2,
+        },
+        {
+          index: 3,
+        },
+      ]);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyNotOnceUseCollection)(
+    'delete collection after useCollection initialized on $fnName',
+    async ({ useAnyNotOnceCollection }) => {
+      const ref = collection(db, 'test');
+      const docRef = await addDoc(ref, { index: 1 });
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [data, loading, error] = useAnyNotOnceCollection(ref);
+        return {
+          data,
+          loading,
+          error,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.data).toEqual([
+        {
+          index: 1,
+        },
+      ]);
+
+      const prevData = result.current.data;
+
+      await act(async () => {
+        await deleteDoc(docRef);
+      });
+
+      await waitFor(() => result.current.data !== prevData);
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toEqual([]);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyUseCollection)(
+    'consistency between params and result data on $fnName',
+    async ({ useAnyCollection }) => {
+      const ref1 = collection(db, 'test');
+      await addDoc(ref1, { index: 1 });
+      const ref2 = collection(db, 'test2');
+      await addDoc(ref2, { index: 2 });
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [ref, setRef] = useState(ref1);
+        const [data, loading, error] = useAnyCollection(ref);
+        return {
+          id: ref.id,
+          ref,
+          data,
+          loading,
+          error,
+          setRef,
+        };
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      act(() => {
+        result.current.setRef(ref2);
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      result.all.forEach((eachResult) => {
+        if (eachResult instanceof Error) {
+          fail(eachResult);
+        }
+        expect([
+          { id: ref1.id, data: undefined }, // loading
+          { id: ref1.id, data: [{ index: 1 }] }, // loaded
+          { id: ref2.id, data: undefined },
+          { id: ref2.id, data: [{ index: 2 }] },
+        ]).toContainEqual({
+          id: eachResult.id,
+          data: eachResult.data,
+        });
+      });
+
+      unmount();
+    }
+  );
+
+  test('receive metadata change event if db persistence enabled', async () => {
+    const user = env.unauthenticatedContext();
+    const db = user.firestore();
+    await db.enablePersistence();
+
+    const ref = collection(db, 'test');
+    await addDoc(ref, { index: 1 });
+
     const { result, waitFor, unmount } = renderHook(() => {
-      const [collectionData, loading, error] = useCollectionData(
-        collection(db, collectionID)
-      );
-      return { collectionData, loading, error };
+      const [snapshot, loading, error] = useCollection(ref, {
+        snapshotListenOptions: {
+          includeMetadataChanges: true,
+        },
+      });
+      return { snapshot, loading, error };
     });
+
     await waitFor(() => result.current.loading === false);
 
-    // assert
-    expect(result.current.collectionData?.[0]).toEqual({ name: 'bo' });
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe(undefined);
+    expect(result.current.snapshot?.metadata.fromCache).toBe(true);
 
-    // clean up
+    const prevSnapshot = result.current.snapshot;
+
+    await waitFor(() => result.current.snapshot !== prevSnapshot);
+
+    expect(result.current.snapshot?.metadata.fromCache).toBe(false);
+
     unmount();
+
+    // FIXME: jest says asynchronous operations remain
+    await db.terminate();
   });
 
-  test('unupdated document instance is same as before', async () => {
-    // arrange
-    const collectionID = Math.random().toString();
-    const documentRef1 = await addDoc(collection(db, collectionID), { a: '1' });
-    const documentRef2 = doc(collection(db, collectionID));
+  test('receive new data if db persistence enabled', async () => {
+    const user = env.unauthenticatedContext();
+    const db = user.firestore();
+    await db.enablePersistence();
 
-    // act
+    const ref = collection(db, 'test');
+    await addDoc(ref, { index: 1 });
+
+    const { result, waitFor, unmount } = renderHook(() => {
+      const [data, loading, error] = useCollectionData(ref, {
+        snapshotListenOptions: {
+          includeMetadataChanges: true,
+        },
+      });
+      return { data, loading, error };
+    });
+
+    await waitFor(() => result.current.loading === false);
+
+    expect(result.current.data).not.toBe(undefined);
+
+    const prevData = result.current.data;
+
+    await waitFor(() => result.current.data !== prevData);
+
+    expect(result.current.data).not.toBe(prevData);
+
+    unmount();
+
+    // FIXME: jest says asynchronous operations remain
+    await db.terminate();
+  });
+
+  test.each(eachAnyDataUseCollection)(
+    'returns initial value and not loading if initialValue provided on $fnName',
+    async ({ useAnyDataCollection }) => {
+      const ref = collection(db, 'test');
+
+      const { result, unmount } = renderHook(() => {
+        const [data, loading, error] = useAnyDataCollection(ref, {
+          initialValue: [{ index: 1 }],
+        });
+        return { data, loading, error };
+      });
+
+      expect(result.current.error).toBe(undefined);
+      expect(result.current.loading).toBe(false);
+      expect(result.current.data).toEqual([{ index: 1 }]);
+
+      unmount();
+    }
+  );
+
+  test('unupdated document is keep same instance as before on useCollectionData', async () => {
+    const ref = collection(db, 'test');
+    const docRef1 = doc(ref);
+    const docRef2 = doc(ref);
+    await setDoc(docRef1, { index: 1 });
+    const orderByIndexQuery = query(collection(db, 'test'), orderBy('index'));
+
     const { result, unmount, waitFor } = renderHook(() => {
-      const [collectionData, loading, error] = useCollectionData(
-        collection(db, collectionID)
-      );
+      const [data, loading, error] = useCollectionData(orderByIndexQuery);
       return {
-        collectionData,
+        data,
         loading,
         error,
       };
@@ -71,143 +738,19 @@ describe('useCollectionData hook', () => {
 
     await waitFor(() => result.current.loading === false);
 
-    const firstFetchedDocument1 = result.current.collectionData?.[0];
+    const prevData1 = result.current.data;
+
+    expect(prevData1?.[0]).toEqual({ index: 1 });
 
     await act(async () => {
-      await setDoc(documentRef2, { b: '2' });
-
-      await waitFor(() => result.current.collectionData?.length === 2);
+      await setDoc(docRef2, { index: 2 });
     });
 
-    //assert
-    expect(firstFetchedDocument1).toEqual({ a: '1' });
-    expect(result.current.collectionData?.[0]).toBe(firstFetchedDocument1);
-    expect(result.current.collectionData?.[1]).toEqual({ b: '2' });
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe(undefined);
+    await waitFor(() => result.current.data?.length === 2);
 
-    // clean up
-    unmount();
-  });
+    expect(result.current.data?.[0]).toEqual({ index: 1 });
+    expect(result.current.data?.[0]).toBe(prevData1?.[0]);
 
-  test('start loading after collectionReference is changed', async () => {
-    // arrange
-    const collectionID1 = Math.random().toString();
-    const collectionID2 = Math.random().toString();
-    await addDoc(collection(db, collectionID1), { a: '1' });
-    await addDoc(collection(db, collectionID2), { b: '2' });
-
-    // act
-    const { result, unmount, waitFor } = renderHook(() => {
-      const [id, setID] = useState(collectionID1);
-      const [collectionData, loading, error] = useCollectionData(
-        collection(db, id)
-      );
-      return {
-        id,
-        collectionData,
-        loading,
-        error,
-        setID,
-      };
-    });
-    await waitFor(() => result.current.loading === false);
-
-    act(() => {
-      result.current.setID(collectionID2);
-    });
-
-    //assert
-    expect(result.current.collectionData).toBe(undefined);
-    expect(result.current.loading).toBe(true);
-    expect(result.current.error).toBe(undefined);
-
-    // clean up
-    unmount();
-  });
-
-  test('loads and returns data from server after collectionReference is changed', async () => {
-    // arrange
-    const collectionID1 = Math.random().toString();
-    const collectionID2 = Math.random().toString();
-    await addDoc(collection(db, collectionID1), { a: '1' });
-    await addDoc(collection(db, collectionID2), { b: '2' });
-
-    // act
-    const { result, unmount, waitFor } = renderHook(() => {
-      const [id, setID] = useState(collectionID1);
-      const [collectionData, loading, error] = useCollectionData(
-        collection(db, id)
-      );
-      return {
-        id,
-        collectionData,
-        loading,
-        error,
-        setID,
-      };
-    });
-
-    await waitFor(() => result.current.loading === false);
-
-    act(() => result.current.setID(collectionID2));
-
-    await waitFor(() => result.current.loading === false);
-
-    //assert
-    expect(result.current.collectionData?.[0]).toEqual({ b: '2' });
-    expect(result.current.loading).toBe(false);
-    expect(result.current.error).toBe(undefined);
-
-    // clean up
-    unmount();
-  });
-
-  test('consistency between params and result data', async () => {
-    // arrange
-    const collectionID1 = Math.random().toString();
-    const collectionID2 = Math.random().toString();
-    await addDoc(collection(db, collectionID1), { a: '1' });
-    await addDoc(collection(db, collectionID2), { b: '2' });
-
-    // act
-    const { result, unmount, waitFor } = renderHook(() => {
-      const [id, setID] = useState(collectionID1);
-      const [collectionData, loading, error] = useCollectionData(
-        collection(db, id)
-      );
-      return {
-        id,
-        collectionData,
-        loading,
-        error,
-        setID,
-      };
-    });
-
-    await waitFor(() => result.current.loading === false);
-
-    act(() => {
-      result.current.setID(collectionID2);
-    });
-
-    await waitFor(() => result.current.loading === false);
-
-    //assert
-    result.all.forEach((_eachResult) => {
-      const eachResult = _eachResult as typeof result.current;
-      expect([
-        { id: collectionID1, data: undefined },
-        { id: collectionID1, data: { a: '1' } },
-        { id: collectionID2, data: undefined },
-        { id: collectionID2, data: { b: '2' } },
-      ]).toContainEqual({
-        id: eachResult.id,
-        data: eachResult.collectionData?.[0],
-      });
-    });
-
-    // clean up
     unmount();
   });
 });
