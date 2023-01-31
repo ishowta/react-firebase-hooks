@@ -142,7 +142,7 @@ export const useCollectionData = <T = DocumentData>(
             }
           });
         return {
-          collectionData,
+          collectionData: [...collectionData],
           snapshot: snapshot,
         };
       });
@@ -161,7 +161,12 @@ export const useCollectionData = <T = DocumentData>(
     };
   }, [ref]);
 
-  return [value?.collectionData, loading, error, value?.snapshot];
+  return [
+    value?.collectionData ?? options?.initialValue,
+    loading,
+    error,
+    value?.snapshot,
+  ];
 };
 
 export const useCollectionDataOnce = <T = DocumentData>(
