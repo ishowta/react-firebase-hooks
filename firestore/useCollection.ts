@@ -163,7 +163,7 @@ export const useCollectionData = <T = DocumentData>(
 
   return [
     value?.collectionData ?? options?.initialValue,
-    loading,
+    options?.initialValue !== undefined ? false : loading,
     error,
     value?.snapshot,
   ];
@@ -184,7 +184,13 @@ export const useCollectionDataOnce = <T = DocumentData>(
     options?.initialValue
   );
 
-  return [values, loading, error, snapshots, reloadData];
+  return [
+    values,
+    options?.initialValue !== undefined ? false : loading,
+    error,
+    snapshots,
+    reloadData,
+  ];
 };
 
 const getValuesFromSnapshots = <T>(

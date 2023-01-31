@@ -112,7 +112,12 @@ export const useDocumentData = <T = DocumentData>(
     options?.initialValue
   );
 
-  return [value, loading, error, snapshot];
+  return [
+    value,
+    options?.initialValue !== undefined ? false : loading,
+    error,
+    snapshot,
+  ];
 };
 
 export const useDocumentDataOnce = <T = DocumentData>(
@@ -130,7 +135,13 @@ export const useDocumentDataOnce = <T = DocumentData>(
     options?.initialValue
   );
 
-  return [value, loading, error, snapshot, reloadData];
+  return [
+    value,
+    options?.initialValue !== undefined ? false : loading,
+    error,
+    snapshot,
+    reloadData,
+  ];
 };
 
 const getDocFnFromGetOptions = (
