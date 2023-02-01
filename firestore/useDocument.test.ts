@@ -17,7 +17,7 @@ import {
   useDocumentDataOnce,
 } from './useDocument';
 import { useMemo, useState } from 'react';
-import { db, env } from '../test/firebase';
+import { firestore, testEnv } from '../test/firebase';
 import { IDOptions, InitialValueOptions, OnceOptions, Options } from './types';
 
 type UseAnyDocument = <T>(
@@ -181,13 +181,13 @@ const eachAnyDataUseDocument = (() => {
 
 describe('useDocument hook', () => {
   beforeEach(async () => {
-    await env.clearFirestore();
+    await testEnv.clearFirestore();
   });
 
   test.each(eachAnyUseDocument)(
     'begins in loading state on $fnName',
     async ({ useAnyDocument }) => {
-      const ref = doc(collection(db, 'test'));
+      const ref = doc(collection(firestore, 'test'));
 
       const { result, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyDocument(ref);
@@ -205,7 +205,7 @@ describe('useDocument hook', () => {
   test.each(eachAnyUseDocument)(
     'loads and returns data on $fnName',
     async ({ useAnyDocument }) => {
-      const ref = await addDoc(collection(db, 'test'), { index: 1 });
+      const ref = await addDoc(collection(firestore, 'test'), { index: 1 });
 
       const { result, waitFor, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyDocument(ref);
@@ -225,7 +225,7 @@ describe('useDocument hook', () => {
   test.each(eachAnySnapshotUseDocument)(
     'loads and returns not exist on $fnName',
     async ({ useAnySnapshotDocument }) => {
-      const ref = doc(collection(db, 'test'));
+      const ref = doc(collection(firestore, 'test'));
 
       const { result, waitFor, unmount } = renderHook(() => {
         const [snapshot, loading, error] = useAnySnapshotDocument(ref);
@@ -245,7 +245,7 @@ describe('useDocument hook', () => {
   test.each(eachAnyDataUseDocument)(
     'loads and returns undefined on $fnName',
     async ({ useAnyDataDocument }) => {
-      const ref = doc(collection(db, 'test'));
+      const ref = doc(collection(firestore, 'test'));
 
       const { result, waitFor, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyDataDocument(ref);
@@ -265,7 +265,7 @@ describe('useDocument hook', () => {
   test.each(eachAnyUseDocument)(
     'loads and returns error when permission denied on $fnName',
     async ({ useAnyDocument }) => {
-      const ref = doc(collection(db, 'private'), 'foo');
+      const ref = doc(collection(firestore, 'private'), 'foo');
 
       const { result, waitFor, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyDocument(ref);
@@ -285,8 +285,8 @@ describe('useDocument hook', () => {
   test.each(eachAnyUseDocument)(
     'reset data and start loading after documentReference is changed on $fnName',
     async ({ useAnyDocument }) => {
-      const ref1 = await addDoc(collection(db, 'test'), { index: 1 });
-      const ref2 = await addDoc(collection(db, 'test'), { index: 2 });
+      const ref1 = await addDoc(collection(firestore, 'test'), { index: 1 });
+      const ref2 = await addDoc(collection(firestore, 'test'), { index: 2 });
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [ref, setRef] = useState(ref1);
@@ -320,8 +320,8 @@ describe('useDocument hook', () => {
   test.each(eachAnySnapshotUseDocument)(
     'nothing happens if replaced to same path ref on $fnName',
     async ({ useAnySnapshotDocument }) => {
-      const ref1 = await addDoc(collection(db, 'test'), { index: 1 });
-      const ref2 = doc(collection(db, 'test'), ref1.id);
+      const ref1 = await addDoc(collection(firestore, 'test'), { index: 1 });
+      const ref2 = doc(collection(firestore, 'test'), ref1.id);
 
       expect(ref1).not.toBe(ref2);
 
@@ -356,8 +356,8 @@ describe('useDocument hook', () => {
   test.each(eachAnyUseDocument)(
     'reset error and start loading after documentReference is changed on $fnName',
     async ({ useAnyDocument }) => {
-      const ref1 = doc(collection(db, 'private'), 'foo');
-      const ref2 = await addDoc(collection(db, 'test'), { index: 2 });
+      const ref1 = doc(collection(firestore, 'private'), 'foo');
+      const ref2 = await addDoc(collection(firestore, 'test'), { index: 2 });
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [ref, setRef] = useState(ref1);
@@ -391,8 +391,8 @@ describe('useDocument hook', () => {
   test.each(eachAnyUseDocument)(
     'loads and returns data after documentReference is changed on $fnName',
     async ({ useAnyDocument }) => {
-      const ref1 = await addDoc(collection(db, 'test'), { index: 1 });
-      const ref2 = await addDoc(collection(db, 'test'), { index: 2 });
+      const ref1 = await addDoc(collection(firestore, 'test'), { index: 1 });
+      const ref2 = await addDoc(collection(firestore, 'test'), { index: 2 });
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [ref, setRef] = useState(ref1);
@@ -423,7 +423,7 @@ describe('useDocument hook', () => {
   test.each(eachAnyNotOnceUseDocument)(
     'create document after useDocument initialized on $fnName',
     async ({ useAnyNotOnceDocument }) => {
-      const ref = doc(collection(db, 'test'));
+      const ref = doc(collection(firestore, 'test'));
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [data, loading, error] = useAnyNotOnceDocument(ref);
@@ -457,7 +457,7 @@ describe('useDocument hook', () => {
   test.each(eachAnyNotOnceUseDocument)(
     'update document after useDocument initialized on $fnName',
     async ({ useAnyNotOnceDocument }) => {
-      const ref = await addDoc(collection(db, 'test'), { index: 1 });
+      const ref = await addDoc(collection(firestore, 'test'), { index: 1 });
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [data, loading, error] = useAnyNotOnceDocument(ref);
@@ -491,7 +491,7 @@ describe('useDocument hook', () => {
   test.each(eachAnyNotOnceUseDocument)(
     'delete document after useDocument initialized on $fnName',
     async ({ useAnyNotOnceDocument }) => {
-      const ref = await addDoc(collection(db, 'test'), { index: 1 });
+      const ref = await addDoc(collection(firestore, 'test'), { index: 1 });
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [data, loading, error] = useAnyNotOnceDocument(ref);
@@ -525,9 +525,12 @@ describe('useDocument hook', () => {
   test.each(eachAnyNotOnceUseDocument)(
     'reset data and return error after server data was changed to unpermitted on $fnName',
     async ({ useAnyNotOnceDocument }) => {
-      const ref = await addDoc(collection(db, 'test_conditionally_private'), {
-        index: 1,
-      });
+      const ref = await addDoc(
+        collection(firestore, 'test_conditionally_private'),
+        {
+          index: 1,
+        }
+      );
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [data, loading, error] = useAnyNotOnceDocument(ref);
@@ -557,8 +560,8 @@ describe('useDocument hook', () => {
   test.each(eachAnyUseDocument)(
     'consistency between params and result data on $fnName',
     async ({ useAnyDocument }) => {
-      const ref1 = await addDoc(collection(db, 'test'), { index: 1 });
-      const ref2 = await addDoc(collection(db, 'test'), { index: 2 });
+      const ref1 = await addDoc(collection(firestore, 'test'), { index: 1 });
+      const ref2 = await addDoc(collection(firestore, 'test'), { index: 2 });
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [ref, setRef] = useState(ref1);
@@ -601,7 +604,7 @@ describe('useDocument hook', () => {
   );
 
   test('receive metadata change event if db persistence enabled', async () => {
-    const user = env.unauthenticatedContext();
+    const user = testEnv.unauthenticatedContext();
     const db = user.firestore();
     await db.enablePersistence();
 
@@ -633,7 +636,7 @@ describe('useDocument hook', () => {
   });
 
   test('receive new data if db persistence enabled', async () => {
-    const user = env.unauthenticatedContext();
+    const user = testEnv.unauthenticatedContext();
     const db = user.firestore();
     await db.enablePersistence();
 
@@ -667,7 +670,7 @@ describe('useDocument hook', () => {
   test.each(eachAnyDataUseDocument)(
     'returns initial value and not loading if initialValue provided on $fnName',
     async ({ useAnyDataDocument }) => {
-      const ref = doc(collection(db, 'test'));
+      const ref = doc(collection(firestore, 'test'));
 
       const { result, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyDataDocument(ref, {

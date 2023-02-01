@@ -19,7 +19,7 @@ import {
   useCollectionDataOnce,
 } from './useCollection';
 import { useMemo, useState } from 'react';
-import { db, env } from '../test/firebase';
+import { firestore, testEnv } from '../test/firebase';
 import { IDOptions, InitialValueOptions, OnceOptions, Options } from './types';
 
 type UseAnyCollection = <T>(
@@ -189,13 +189,13 @@ const eachAnyDataUseCollection = (() => {
 
 describe('useCollection hook', () => {
   beforeEach(async () => {
-    await env.clearFirestore();
+    await testEnv.clearFirestore();
   });
 
   test.each(eachAnyUseCollection)(
     'begins in loading state on $fnName',
     async ({ useAnyCollection }) => {
-      const ref = collection(db, 'test');
+      const ref = collection(firestore, 'test');
 
       const { result, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyCollection(ref);
@@ -213,7 +213,7 @@ describe('useCollection hook', () => {
   test.each(eachAnyUseCollection)(
     'loads and returns data on $fnName',
     async ({ useAnyCollection }) => {
-      const ref = collection(db, 'test');
+      const ref = collection(firestore, 'test');
       await addDoc(ref, { index: 1 });
 
       const { result, waitFor, unmount } = renderHook(() => {
@@ -234,7 +234,7 @@ describe('useCollection hook', () => {
   test.each(eachAnyUseCollection)(
     'loads and returns empty list if no document exists on $fnName',
     async ({ useAnyCollection }) => {
-      const ref = collection(db, 'test');
+      const ref = collection(firestore, 'test');
 
       const { result, waitFor, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyCollection(ref);
@@ -254,7 +254,7 @@ describe('useCollection hook', () => {
   test.each(eachAnyUseCollection)(
     'loads and returns error when permission denied on $fnName',
     async ({ useAnyCollection }) => {
-      const ref = collection(db, 'private');
+      const ref = collection(firestore, 'private');
 
       const { result, waitFor, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyCollection(ref);
@@ -274,8 +274,8 @@ describe('useCollection hook', () => {
   test.each(eachAnyUseCollection)(
     'reset data and start loading after collectionReference is changed on $fnName',
     async ({ useAnyCollection }) => {
-      const ref1 = collection(db, 'test');
-      const ref2 = collection(db, 'test2');
+      const ref1 = collection(firestore, 'test');
+      const ref2 = collection(firestore, 'test2');
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [ref, setRef] = useState(ref1);
@@ -309,8 +309,8 @@ describe('useCollection hook', () => {
   test.each(eachAnySnapshotUseCollection)(
     'nothing happens if replaced to same path ref on $fnName',
     async ({ useAnySnapshotCollection }) => {
-      const ref1 = collection(db, 'test');
-      const ref2 = collection(db, 'test');
+      const ref1 = collection(firestore, 'test');
+      const ref2 = collection(firestore, 'test');
 
       expect(ref1).not.toBe(ref2);
 
@@ -345,8 +345,8 @@ describe('useCollection hook', () => {
   test.each(eachAnyUseCollection)(
     'reset error and start loading after collectionReference is changed on $fnName',
     async ({ useAnyCollection }) => {
-      const ref1 = collection(db, 'private');
-      const ref2 = collection(db, 'test');
+      const ref1 = collection(firestore, 'private');
+      const ref2 = collection(firestore, 'test');
 
       const { result, unmount, waitFor } = renderHook(() => {
         const [ref, setRef] = useState(ref1);
@@ -380,8 +380,8 @@ describe('useCollection hook', () => {
   test.each(eachAnyUseCollection)(
     'loads and returns data after collectionReference is changed on $fnName',
     async ({ useAnyCollection }) => {
-      const ref1 = collection(db, 'test');
-      const ref2 = collection(db, 'test2');
+      const ref1 = collection(firestore, 'test');
+      const ref2 = collection(firestore, 'test2');
       await addDoc(ref2, { index: 2 });
 
       const { result, unmount, waitFor } = renderHook(() => {
@@ -413,7 +413,7 @@ describe('useCollection hook', () => {
   test.each(eachAnyNotOnceUseCollection)(
     'add document after useCollection initialized on $fnName',
     async ({ useAnyNotOnceCollection }) => {
-      const ref = collection(db, 'test');
+      const ref = collection(firestore, 'test');
       const docRef = doc(ref);
 
       const { result, unmount, waitFor } = renderHook(() => {
@@ -452,7 +452,7 @@ describe('useCollection hook', () => {
   test.each(eachAnyNotOnceUseCollection)(
     'update document after useCollection initialized on $fnName',
     async ({ useAnyNotOnceCollection }) => {
-      const ref = collection(db, 'test');
+      const ref = collection(firestore, 'test');
       const docRef = await addDoc(ref, { index: 1 });
 
       const { result, unmount, waitFor } = renderHook(() => {
@@ -495,7 +495,7 @@ describe('useCollection hook', () => {
   test.each(eachAnyNotOnceUseCollection)(
     'swap document after useCollection initialized on $fnName',
     async ({ useAnyNotOnceCollection }) => {
-      const ref = collection(db, 'test');
+      const ref = collection(firestore, 'test');
       const docRef1 = doc(ref);
       const docRef2 = doc(ref);
       await setDoc(docRef1, { index: 1 });
@@ -550,7 +550,7 @@ describe('useCollection hook', () => {
   test.each(eachAnyNotOnceUseCollection)(
     'delete collection after useCollection initialized on $fnName',
     async ({ useAnyNotOnceCollection }) => {
-      const ref = collection(db, 'test');
+      const ref = collection(firestore, 'test');
       const docRef = await addDoc(ref, { index: 1 });
 
       const { result, unmount, waitFor } = renderHook(() => {
@@ -589,9 +589,9 @@ describe('useCollection hook', () => {
   test.each(eachAnyUseCollection)(
     'consistency between params and result data on $fnName',
     async ({ useAnyCollection }) => {
-      const ref1 = collection(db, 'test');
+      const ref1 = collection(firestore, 'test');
       await addDoc(ref1, { index: 1 });
-      const ref2 = collection(db, 'test2');
+      const ref2 = collection(firestore, 'test2');
       await addDoc(ref2, { index: 2 });
 
       const { result, unmount, waitFor } = renderHook(() => {
@@ -635,7 +635,7 @@ describe('useCollection hook', () => {
   );
 
   test('receive metadata change event if db persistence enabled', async () => {
-    const user = env.unauthenticatedContext();
+    const user = testEnv.unauthenticatedContext();
     const db = user.firestore();
     await db.enablePersistence();
 
@@ -668,7 +668,7 @@ describe('useCollection hook', () => {
   });
 
   test('receive new data if db persistence enabled', async () => {
-    const user = env.unauthenticatedContext();
+    const user = testEnv.unauthenticatedContext();
     const db = user.firestore();
     await db.enablePersistence();
 
@@ -703,7 +703,7 @@ describe('useCollection hook', () => {
   test.each(eachAnyDataUseCollection)(
     'returns initial value and not loading if initialValue provided on $fnName',
     async ({ useAnyDataCollection }) => {
-      const ref = collection(db, 'test');
+      const ref = collection(firestore, 'test');
 
       const { result, unmount } = renderHook(() => {
         const [data, loading, error] = useAnyDataCollection(ref, {
@@ -721,11 +721,14 @@ describe('useCollection hook', () => {
   );
 
   test('unupdated document is keep same instance as before on useCollectionData', async () => {
-    const ref = collection(db, 'test');
+    const ref = collection(firestore, 'test');
     const docRef1 = doc(ref);
     const docRef2 = doc(ref);
     await setDoc(docRef1, { index: 1 });
-    const orderByIndexQuery = query(collection(db, 'test'), orderBy('index'));
+    const orderByIndexQuery = query(
+      collection(firestore, 'test'),
+      orderBy('index')
+    );
 
     const { result, unmount, waitFor } = renderHook(() => {
       const [data, loading, error] = useCollectionData(orderByIndexQuery);

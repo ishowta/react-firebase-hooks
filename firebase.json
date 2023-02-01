@@ -6,9 +6,24 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "emulators": {
     "firestore": {
       "port": 8080
+    },
+    "auth": {
+      "port": 8081
+    },
+    "database": {
+      "port": 8082
+    },
+    "functions": {
+      "port": 8083
+    },
+    "storage": {
+      "port": 8084
     },
     "ui": {
       "enabled": false
