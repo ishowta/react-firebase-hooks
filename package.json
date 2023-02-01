@@ -55,7 +55,7 @@
     "start": "rollup -c -w",
     "emulator": "firebase emulators:start",
     "test": "jest --runInBand --forceExit",
-    "test:ci": "firebase emulators:exec 'npm run test'"
+    "test:ci": "npm install --prefix test/functions && firebase emulators:exec 'npm run test'"
   },
   "devDependencies": {
     "@babel/core": "^7.19.6",

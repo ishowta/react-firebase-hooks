@@ -1,6 +1,7 @@
 {
   "functions": {
-    "runtime": "node16"
+    "runtime": "node16",
+    "source": "test/functions"
   },
   "firestore": {
     "rules": "firestore.rules",

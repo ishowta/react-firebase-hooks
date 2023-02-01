@@ -7,8 +7,12 @@ import { Firestore } from 'firebase/firestore';
 
 import 'fake-indexeddb/auto';
 import { Database } from 'firebase/database';
-import { Functions, getFunctions } from 'firebase/functions';
-import { Auth, getAuth } from 'firebase/auth';
+import {
+  connectFunctionsEmulator,
+  Functions,
+  getFunctions,
+} from 'firebase/functions';
+import { Auth, connectAuthEmulator, getAuth } from 'firebase/auth';
 import { FirebaseApp, initializeApp } from '@firebase/app';
 
 export let testEnv: RulesTestEnvironment;
@@ -48,8 +52,11 @@ beforeAll(async () => {
   firestore = (testContext.firestore() as unknown) as Firestore;
   db = (testContext.database() as unknown) as Database;
   storage = (testContext.storage() as unknown) as Storage;
+
   functions = getFunctions(testApp);
+  connectFunctionsEmulator(functions, '127.0.0.1', 8083);
   auth = getAuth(testApp);
+  connectAuthEmulator(auth, 'http://127.0.0.1:8081');
 });
 
 afterAll(async () => {
