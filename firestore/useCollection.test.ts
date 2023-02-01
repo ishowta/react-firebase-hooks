@@ -197,7 +197,7 @@ describe('useCollection hook', () => {
     async ({ useAnyCollection }) => {
       const ref = collection(firestore, 'test');
 
-      const { result, unmount } = renderHook(() => {
+      const { result, unmount, waitFor } = renderHook(() => {
         const [data, loading, error] = useAnyCollection(ref);
         return { data, loading, error };
       });
@@ -205,6 +205,8 @@ describe('useCollection hook', () => {
       expect(result.current.error).toBe(undefined);
       expect(result.current.loading).toBe(true);
       expect(result.current.data).toBe(undefined);
+
+      await waitFor(() => result.current.loading === false);
 
       unmount();
     }
@@ -705,7 +707,7 @@ describe('useCollection hook', () => {
     async ({ useAnyDataCollection }) => {
       const ref = collection(firestore, 'test');
 
-      const { result, unmount } = renderHook(() => {
+      const { result, unmount, waitFor } = renderHook(() => {
         const [data, loading, error] = useAnyDataCollection(ref, {
           initialValue: [{ index: 1 }],
         });
@@ -715,6 +717,8 @@ describe('useCollection hook', () => {
       expect(result.current.error).toBe(undefined);
       expect(result.current.loading).toBe(false);
       expect(result.current.data).toEqual([{ index: 1 }]);
+
+      await waitFor(() => result.current.loading === false);
 
       unmount();
     }

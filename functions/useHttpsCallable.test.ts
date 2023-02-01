@@ -20,7 +20,7 @@ describe('useHttpsCallable hook', () => {
   });
 
   test('call function and get return', async () => {
-    const { result, unmount } = renderHook(() => {
+    const { result, unmount, waitFor } = renderHook(() => {
       const [testCall, loading, error] = useHttpsCallable(functions, 'ping');
       return { testCall, loading, error };
     });
@@ -29,6 +29,8 @@ describe('useHttpsCallable hook', () => {
     await act(async () => {
       callResult = await result.current.testCall();
     });
+
+    await waitFor(() => result.current.loading === false);
 
     expect(result.current.error).toBe(undefined);
     expect(result.current.loading).toBe(false);
@@ -39,7 +41,7 @@ describe('useHttpsCallable hook', () => {
   });
 
   test('call function with params and get result', async () => {
-    const { result, unmount } = renderHook(() => {
+    const { result, unmount, waitFor } = renderHook(() => {
       const [testCall, loading, error] = useHttpsCallable(functions, 'echo');
       return { testCall, loading, error };
     });
@@ -48,6 +50,8 @@ describe('useHttpsCallable hook', () => {
     await act(async () => {
       callResult = await result.current.testCall('hello');
     });
+
+    await waitFor(() => result.current.loading === false);
 
     expect(result.current.error).toBe(undefined);
     expect(result.current.loading).toBe(false);
@@ -58,7 +62,7 @@ describe('useHttpsCallable hook', () => {
   });
 
   test('start loading after call function', async () => {
-    const { result, unmount } = renderHook(() => {
+    const { result, unmount, waitFor } = renderHook(() => {
       const [testCall, loading, error] = useHttpsCallable(functions, 'ping');
       return { testCall, loading, error };
     });
@@ -72,13 +76,17 @@ describe('useHttpsCallable hook', () => {
     expect(result.current.loading).toBe(true);
     expect(typeof result.current.testCall).toBe('function');
 
-    await callResultPromise;
+    await act(async () => {
+      await callResultPromise;
+    });
+
+    await waitFor(() => result.current.loading === false);
 
     unmount();
   });
 
   test('errors in function calls are stored', async () => {
-    const { result, unmount } = renderHook(() => {
+    const { result, unmount, waitFor } = renderHook(() => {
       const [testCall, loading, error] = useHttpsCallable(
         functions,
         'doesNotExistFunc'
@@ -90,6 +98,8 @@ describe('useHttpsCallable hook', () => {
     await act(async () => {
       callResult = await result.current.testCall();
     });
+
+    await waitFor(() => result.current.loading === false);
 
     expect((result.current.error as FirebaseError)?.code).toBe(
       'functions/not-found'

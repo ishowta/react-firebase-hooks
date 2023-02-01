@@ -189,7 +189,7 @@ describe('useDocument hook', () => {
     async ({ useAnyDocument }) => {
       const ref = doc(collection(firestore, 'test'));
 
-      const { result, unmount } = renderHook(() => {
+      const { result, unmount, waitFor } = renderHook(() => {
         const [data, loading, error] = useAnyDocument(ref);
         return { data, loading, error };
       });
@@ -197,6 +197,8 @@ describe('useDocument hook', () => {
       expect(result.current.error).toBe(undefined);
       expect(result.current.loading).toBe(true);
       expect(result.current.data).toBe(undefined);
+
+      await waitFor(() => result.current.loading === false);
 
       unmount();
     }
@@ -313,6 +315,8 @@ describe('useDocument hook', () => {
       expect(result.current.loading).toBe(true);
       expect(result.current.data).toBe(undefined);
 
+      await waitFor(() => result.current.loading === false);
+
       unmount();
     }
   );
@@ -383,6 +387,8 @@ describe('useDocument hook', () => {
       expect(result.current.error).toBe(undefined);
       expect(result.current.loading).toBe(true);
       expect(result.current.data).toBe(undefined);
+
+      await waitFor(() => result.current.loading === false);
 
       unmount();
     }
@@ -672,7 +678,7 @@ describe('useDocument hook', () => {
     async ({ useAnyDataDocument }) => {
       const ref = doc(collection(firestore, 'test'));
 
-      const { result, unmount } = renderHook(() => {
+      const { result, unmount, waitFor } = renderHook(() => {
         const [data, loading, error] = useAnyDataDocument(ref, {
           initialValue: { index: 1 },
         });
@@ -682,6 +688,8 @@ describe('useDocument hook', () => {
       expect(result.current.error).toBe(undefined);
       expect(result.current.loading).toBe(false);
       expect(result.current.data).toEqual({ index: 1 });
+
+      await waitFor(() => result.current.loading === false);
 
       unmount();
     }

@@ -14,13 +14,14 @@ import {
 } from 'firebase/functions';
 import { Auth, connectAuthEmulator, getAuth } from 'firebase/auth';
 import { FirebaseApp, initializeApp } from '@firebase/app';
+import { FirebaseStorage } from 'firebase/storage';
 
 export let testEnv: RulesTestEnvironment;
 export let testContext: RulesTestContext;
 export let testApp: FirebaseApp;
 export let firestore: Firestore;
 export let db: Database;
-export let storage: Storage;
+export let storage: FirebaseStorage;
 export let functions: Functions;
 export let auth: Auth;
 
@@ -51,7 +52,7 @@ beforeAll(async () => {
   // Conversion is safe. see https://github.com/firebase/firebase-js-sdk/issues/5550#issuecomment-928453315
   firestore = (testContext.firestore() as unknown) as Firestore;
   db = (testContext.database() as unknown) as Database;
-  storage = (testContext.storage() as unknown) as Storage;
+  storage = (testContext.storage() as unknown) as FirebaseStorage;
 
   functions = getFunctions(testApp);
   connectFunctionsEmulator(functions, '127.0.0.1', 8083);
