@@ -9,7 +9,7 @@ import {
   QuerySnapshot,
   SnapshotOptions,
 } from 'firebase/firestore';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLoadingValue } from '../util';
 import useIsMounted from '../util/useIsMounted';
 import { usePrevious } from '../util/usePrevious';
@@ -109,6 +109,11 @@ export const useCollectionData = <T = DocumentData>(
     FirestoreError
   >(undefined, [ref]);
 
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
+
   useEffect(() => {
     if (!ref) {
       setValue(undefined);
@@ -118,12 +123,12 @@ export const useCollectionData = <T = DocumentData>(
       setValue((previousValue) => {
         const collectionData = previousValue?.collectionData ?? [];
         snapshot
-          .docChanges(options?.snapshotListenOptions)
+          .docChanges(optionsRef.current?.snapshotListenOptions)
           .forEach((docChange) => {
             switch (docChange.type) {
               case 'added': {
                 collectionData.push(
-                  docChange.doc.data(options?.snapshotOptions)
+                  docChange.doc.data(optionsRef.current?.snapshotOptions)
                 );
                 break;
               }
@@ -136,7 +141,7 @@ export const useCollectionData = <T = DocumentData>(
                 collectionData.splice(
                   docChange.newIndex,
                   0,
-                  docChange.doc.data(options?.snapshotOptions)
+                  docChange.doc.data(optionsRef.current?.snapshotOptions)
                 );
                 break;
               }

@@ -11,6 +11,7 @@ import {
   orderBy,
   Query,
   SnapshotOptions,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { act, renderHook } from '@testing-library/react-hooks';
 import {
@@ -799,6 +800,51 @@ describe('useCollection hook', () => {
 
     expect(result.current.data).not.toBe(undefined);
     expect(result.current.data![0]).not.toBe(prevData![0]);
+
+    unmount();
+  });
+
+  test('changed snapshotOptions is attached to new data', async () => {
+    const ref = collection(firestore, 'test');
+    const docRef = doc(ref);
+
+    const { result, unmount, waitFor } = renderHook(() => {
+      const [snapshotOptions, setSnapshotOptions] = useState<SnapshotOptions>({
+        serverTimestamps: 'estimate',
+      });
+      const [data, loading, error] = useCollectionData(ref, {
+        snapshotOptions,
+      });
+      return {
+        data,
+        loading,
+        error,
+        setSnapshotOptions,
+      };
+    });
+
+    await waitFor(() => {
+      return result.current.loading === false;
+    });
+
+    expect(result.current.data).not.toBe(undefined);
+
+    const prevData = result.current.data;
+
+    act(() => {
+      result.current.setSnapshotOptions({ serverTimestamps: 'none' });
+    });
+
+    await act(async () => {
+      await setDoc(docRef, { time: serverTimestamp() });
+    });
+
+    await waitFor(() => {
+      return result.current.data !== prevData;
+    });
+
+    expect(result.current.data).not.toBe(undefined);
+    expect(result.current.data![0].time).toBe(null);
 
     unmount();
   });
