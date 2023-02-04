@@ -1,14 +1,4 @@
-import { useEffect, useRef } from 'react';
-
-const usePrevious = <T>(currentValue: T): T | undefined => {
-  const previousRef = useRef<T | undefined>(undefined);
-
-  useEffect(() => {
-    previousRef.current = currentValue;
-  });
-
-  return previousRef.current;
-};
+import { usePrevious } from './usePrevious';
 
 export const useChanged = (deps: unknown[] | undefined): boolean => {
   const previousDeps = usePrevious(deps);

@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLoadingValue } from '../util';
 import useIsMounted from '../util/useIsMounted';
+import { usePrevious } from '../util/usePrevious';
 import { useIsFirestoreQueryEqual } from './helpers';
 import {
   CollectionDataHook,
@@ -161,8 +162,31 @@ export const useCollectionData = <T = DocumentData>(
     };
   }, [ref]);
 
+  useEffect(() => {
+    if (value) {
+      const refreshedCollectionData = value.snapshot.docs.map((doc) =>
+        doc.data(options?.snapshotOptions)
+      );
+      setValue({
+        snapshot: value.snapshot,
+        collectionData: refreshedCollectionData,
+      });
+    }
+  }, [options?.snapshotOptions]);
+
+  const previousOptions = usePrevious(options);
+  const collectionData = useMemo(() => {
+    if (previousOptions?.snapshotOptions === options?.snapshotOptions) {
+      return value?.collectionData;
+    }
+    const refreshedCollectionData = value?.snapshot.docs.map((doc) =>
+      doc.data(options?.snapshotOptions)
+    );
+    return refreshedCollectionData;
+  }, [value, options?.snapshotOptions]);
+
   return [
-    value?.collectionData ?? options?.initialValue,
+    collectionData ?? options?.initialValue,
     options?.initialValue !== undefined ? false : loading,
     error,
     value?.snapshot,

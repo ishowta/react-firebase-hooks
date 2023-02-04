@@ -10,6 +10,7 @@ import {
   query,
   orderBy,
   Query,
+  SnapshotOptions,
 } from 'firebase/firestore';
 import { act, renderHook } from '@testing-library/react-hooks';
 import {
@@ -757,6 +758,47 @@ describe('useCollection hook', () => {
 
     expect(result.current.data?.[0]).toEqual({ index: 1 });
     expect(result.current.data?.[0]).toBe(prevData1?.[0]);
+
+    unmount();
+  });
+
+  test('refresh document instance when change options.snapshotOptions', async () => {
+    const ref = collection(firestore, 'test');
+    await addDoc(ref, { index: 1 });
+
+    const { result, unmount, waitFor } = renderHook(() => {
+      const [snapshotOptions, setSnapshotOptions] = useState<SnapshotOptions>({
+        serverTimestamps: 'estimate',
+      });
+      const [data, loading, error] = useCollectionData(ref, {
+        snapshotOptions,
+      });
+      return {
+        data,
+        loading,
+        error,
+        setSnapshotOptions,
+      };
+    });
+
+    await waitFor(() => {
+      return result.current.loading === false;
+    });
+
+    expect(result.current.data).not.toBe(undefined);
+
+    const prevData = result.current.data;
+
+    act(() => {
+      result.current.setSnapshotOptions({ serverTimestamps: 'previous' });
+    });
+
+    await waitFor(() => {
+      return result.current.data !== prevData;
+    });
+
+    expect(result.current.data).not.toBe(undefined);
+    expect(result.current.data![0]).not.toBe(prevData![0]);
 
     unmount();
   });
