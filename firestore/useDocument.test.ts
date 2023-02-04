@@ -7,6 +7,7 @@ import {
   DocumentSnapshot,
   FirestoreError,
   setDoc,
+  SnapshotListenOptions,
   updateDoc,
 } from 'firebase/firestore';
 import { act, renderHook } from '@testing-library/react-hooks';
@@ -609,57 +610,23 @@ describe('useDocument hook', () => {
     }
   );
 
-  test('receive metadata change event if db persistence enabled', async () => {
-    const user = testEnv.unauthenticatedContext();
-    const db = user.firestore();
-    await db.enablePersistence();
+  test('receive new data if includeMetadataChanges enabled', async () => {
+    const ref = doc(collection(firestore, 'test'));
 
-    const ref = await addDoc(collection(db, 'test'), { index: 1 });
-
-    const { result, waitFor, unmount } = renderHook(() => {
-      const [snapshot, loading, error] = useDocument(ref, {
-        snapshotListenOptions: {
-          includeMetadataChanges: true,
-        },
-      });
-      return { snapshot, loading, error };
-    });
-
-    await waitFor(() => result.current.loading === false);
-
-    expect(result.current.snapshot?.metadata.fromCache).toBe(true);
-
-    const prevSnapshot = result.current.snapshot;
-
-    await waitFor(() => result.current.snapshot !== prevSnapshot);
-
-    expect(result.current.snapshot?.metadata.fromCache).toBe(false);
-
-    unmount();
-
-    // FIXME: jest says asynchronous operations remain
-    await db.terminate();
-  });
-
-  test('receive new data if db persistence enabled', async () => {
-    const user = testEnv.unauthenticatedContext();
-    const db = user.firestore();
-    await db.enablePersistence();
-
-    const ref = await addDoc(collection(db, 'test'), { index: 1 });
+    const snapshotListenOptions = {
+      includeMetadataChanges: true,
+    };
 
     const { result, waitFor, unmount } = renderHook(() => {
       const [data, loading, error] = useDocumentData(ref, {
-        snapshotListenOptions: {
-          includeMetadataChanges: true,
-        },
+        snapshotListenOptions,
       });
       return { data, loading, error };
     });
 
-    await waitFor(() => result.current.loading === false);
+    const setDocPromise = setDoc(ref, { index: 1 });
 
-    expect(result.current.data).not.toBe(undefined);
+    await waitFor(() => result.current.data !== undefined);
 
     const prevData = result.current.data;
 
@@ -667,10 +634,59 @@ describe('useDocument hook', () => {
 
     expect(result.current.data).not.toBe(prevData);
 
-    unmount();
+    await setDocPromise;
 
-    // FIXME: jest says asynchronous operations remain
-    await db.terminate();
+    unmount();
+  });
+
+  test('receive metadata change after change snapshotListenOptions', async () => {
+    const ref = await addDoc(collection(firestore, 'test'), { index: 1 });
+
+    const { result, waitFor, unmount } = renderHook(() => {
+      const [
+        snapshotListenOptions,
+        setSnapshotListenOptions,
+      ] = useState<SnapshotListenOptions>({
+        includeMetadataChanges: false,
+      });
+      const [snapshot, loading, error] = useDocument(ref, {
+        snapshotListenOptions,
+      });
+      return { snapshot, loading, error, setSnapshotListenOptions };
+    });
+
+    act(() => {
+      result.current.setSnapshotListenOptions({
+        includeMetadataChanges: true,
+      });
+    });
+
+    await act(async () => {
+      await updateDoc(ref, { index: 2 });
+    });
+
+    await waitFor(
+      () =>
+        result.current.loading === false &&
+        result.current.snapshot?.metadata.hasPendingWrites === false
+    );
+
+    expect(
+      result.all.some(
+        (result) =>
+          !(result instanceof Error) &&
+          result?.snapshot?.metadata?.hasPendingWrites === false
+      )
+    ).toBe(true);
+    expect(
+      result.all.some(
+        (result) =>
+          !(result instanceof Error) &&
+          result?.snapshot?.metadata?.hasPendingWrites === true
+      )
+    ).toBe(true);
+
+    unmount();
   });
 
   test.each(eachAnyDataUseDocument)(

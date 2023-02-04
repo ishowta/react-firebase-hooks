@@ -48,7 +48,7 @@ export const useDocument = <T = DocumentData>(
     return () => {
       unsubscribe();
     };
-  }, [ref]);
+  }, [ref, options?.snapshotListenOptions]);
 
   return [value as DocumentSnapshot<T>, loading, error];
 };

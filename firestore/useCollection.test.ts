@@ -12,6 +12,7 @@ import {
   Query,
   SnapshotOptions,
   serverTimestamp,
+  SnapshotListenOptions,
 } from 'firebase/firestore';
 import { act, renderHook } from '@testing-library/react-hooks';
 import {
@@ -638,70 +639,104 @@ describe('useCollection hook', () => {
     }
   );
 
-  test('receive metadata change event if db persistence enabled', async () => {
-    const user = testEnv.unauthenticatedContext();
-    const db = user.firestore();
-    await db.enablePersistence();
+  test('receive new data if includeMetadataChanges enabled', async () => {
+    const ref = collection(firestore, 'test');
+    const docRef = doc(ref);
 
-    const ref = collection(db, 'test');
-    await addDoc(ref, { index: 1 });
-
-    const { result, waitFor, unmount } = renderHook(() => {
-      const [snapshot, loading, error] = useCollection(ref, {
-        snapshotListenOptions: {
-          includeMetadataChanges: true,
-        },
-      });
-      return { snapshot, loading, error };
-    });
-
-    await waitFor(() => result.current.loading === false);
-
-    expect(result.current.snapshot?.metadata.fromCache).toBe(true);
-
-    const prevSnapshot = result.current.snapshot;
-
-    await waitFor(() => result.current.snapshot !== prevSnapshot);
-
-    expect(result.current.snapshot?.metadata.fromCache).toBe(false);
-
-    unmount();
-
-    // FIXME: jest says asynchronous operations remain
-    await db.terminate();
-  });
-
-  test('receive new data if db persistence enabled', async () => {
-    const user = testEnv.unauthenticatedContext();
-    const db = user.firestore();
-    await db.enablePersistence();
-
-    const ref = collection(db, 'test');
-    await addDoc(ref, { index: 1 });
+    const snapshotListenOptions = {
+      includeMetadataChanges: true,
+    };
 
     const { result, waitFor, unmount } = renderHook(() => {
       const [data, loading, error] = useCollectionData(ref, {
-        snapshotListenOptions: {
-          includeMetadataChanges: true,
-        },
+        snapshotListenOptions,
       });
       return { data, loading, error };
     });
 
     await waitFor(() => result.current.loading === false);
 
-    expect(result.current.data).not.toBe(undefined);
+    const setDocPromise = setDoc(docRef, { index: 1 });
+
+    await waitFor(() => result.current.data?.length === 1);
 
     const prevData = result.current.data;
 
     await waitFor(() => result.current.data !== prevData);
 
-    expect(result.current.data).not.toBe(prevData);
+    expect(result.current.data?.[0]).not.toBe(prevData?.[0]);
+
+    await setDocPromise;
 
     unmount();
+  });
 
-    // FIXME: jest says asynchronous operations remain
-    await db.terminate();
+  test('receive metadata change after change snapshotListenOptions', async () => {
+    const ref = collection(firestore, 'test');
+    const docRef = await addDoc(ref, { index: 1 });
+
+    const { result, waitFor, unmount } = renderHook(() => {
+      const [
+        snapshotListenOptions,
+        setSnapshotListenOptions,
+      ] = useState<SnapshotListenOptions>({
+        includeMetadataChanges: false,
+      });
+      const [snapshot, loading, error] = useCollection(ref, {
+        snapshotListenOptions,
+      });
+      return { snapshot, loading, error, setSnapshotListenOptions };
+    });
+
+    act(() => {
+      result.current.setSnapshotListenOptions({
+        includeMetadataChanges: true,
+      });
+    });
+
+    await waitFor(() => result.current.loading === false);
+
+    await act(async () => {
+      await updateDoc(docRef, { index: 2 });
+    });
+
+    await waitFor(
+      () =>
+        result.current.loading === false &&
+        result.current.snapshot?.metadata.hasPendingWrites === false
+    );
+
+    expect(
+      result.all.some(
+        (result) =>
+          !(result instanceof Error) &&
+          result?.snapshot?.metadata?.hasPendingWrites === false
+      )
+    ).toBe(true);
+    expect(
+      result.all.some(
+        (result) =>
+          !(result instanceof Error) &&
+          result?.snapshot?.metadata?.hasPendingWrites === true
+      )
+    ).toBe(true);
+
+    expect(
+      result.all.some(
+        (result) =>
+          !(result instanceof Error) &&
+          result?.snapshot?.docs[0]?.metadata?.hasPendingWrites === false
+      )
+    ).toBe(true);
+    expect(
+      result.all.some(
+        (result) =>
+          !(result instanceof Error) &&
+          result?.snapshot?.docs[0]?.metadata?.hasPendingWrites === true
+      )
+    ).toBe(true);
+
+    unmount();
   });
 
   test.each(eachAnyDataUseCollection)(

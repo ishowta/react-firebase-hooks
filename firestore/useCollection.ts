@@ -49,7 +49,7 @@ export const useCollection = <T = DocumentData>(
     return () => {
       unsubscribe();
     };
-  }, [ref]);
+  }, [ref, options?.snapshotListenOptions]);
 
   return [value as QuerySnapshot<T>, loading, error];
 };
@@ -123,7 +123,7 @@ export const useCollectionData = <T = DocumentData>(
       setValue((previousValue) => {
         const collectionData = [...(previousValue?.collectionData ?? [])];
         snapshot
-          .docChanges(optionsRef.current?.snapshotListenOptions)
+          .docChanges(options?.snapshotListenOptions)
           .forEach((docChange) => {
             switch (docChange.type) {
               case 'added': {
@@ -165,7 +165,7 @@ export const useCollectionData = <T = DocumentData>(
     return () => {
       unsubscribe();
     };
-  }, [ref]);
+  }, [ref, options?.snapshotListenOptions]);
 
   useEffect(() => {
     if (value) {
