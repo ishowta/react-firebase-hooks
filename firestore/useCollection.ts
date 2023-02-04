@@ -121,7 +121,7 @@ export const useCollectionData = <T = DocumentData>(
     }
     const handleChangeSnapshot = (snapshot: QuerySnapshot<T>) => {
       setValue((previousValue) => {
-        const collectionData = previousValue?.collectionData ?? [];
+        const collectionData = [...(previousValue?.collectionData ?? [])];
         snapshot
           .docChanges(optionsRef.current?.snapshotListenOptions)
           .forEach((docChange) => {
@@ -148,7 +148,7 @@ export const useCollectionData = <T = DocumentData>(
             }
           });
         return {
-          collectionData: [...collectionData],
+          collectionData,
           snapshot: snapshot,
         };
       });
