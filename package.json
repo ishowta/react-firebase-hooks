@@ -54,7 +54,7 @@
     "prettier": "prettier --check .",
     "start": "rollup -c -w",
     "emulator": "firebase emulators:start",
-    "test": "jest --runInBand --forceExit",
+    "test": "jest --runInBand",
     "test:ci": "npm install --prefix test/functions && firebase emulators:exec 'npm run test'"
   },
   "devDependencies": {
@@ -68,6 +68,7 @@
     "@testing-library/react": "^12",
     "@testing-library/react-hooks": "^8.0.1",
     "@types/jest": "^29.2.1",
+    "@types/node-fetch": "^2.6.2",
     "@types/react": "^17.0.0",
     "babel-jest": "^29.2.2",
     "fake-indexeddb": "^4.0.1",
@@ -75,6 +76,7 @@
     "firebase-tools": "^11.16.0",
     "jest": "^29.2.2",
     "jest-environment-jsdom": "^29.2.2",
+    "node-fetch": "^2.6.7",
     "path": "^0.12.7",
     "prettier": "2.2.1",
     "react": "^17",

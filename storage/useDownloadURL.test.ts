@@ -4,6 +4,7 @@ import { storage, testEnv } from '../test/firebase';
 import useDownloadURL from './useDownloadURL';
 import { readFile } from 'fs/promises';
 import { useState } from 'react';
+import fetch from 'node-fetch';
 
 describe('useDownloadURL hook', () => {
   let sampleFileRef: StorageReference;

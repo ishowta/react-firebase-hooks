@@ -30,7 +30,7 @@ describe('useHttpsCallable hook', () => {
       callResult = await result.current.testCall();
     });
 
-    await waitFor(() => result.current.loading === false);
+    await waitFor(() => result.current.loading === false, { timeout: 10000 });
 
     expect(result.current.error).toBe(undefined);
     expect(result.current.loading).toBe(false);
@@ -51,7 +51,7 @@ describe('useHttpsCallable hook', () => {
       callResult = await result.current.testCall('hello');
     });
 
-    await waitFor(() => result.current.loading === false);
+    await waitFor(() => result.current.loading === false, { timeout: 10000 });
 
     expect(result.current.error).toBe(undefined);
     expect(result.current.loading).toBe(false);
@@ -80,7 +80,7 @@ describe('useHttpsCallable hook', () => {
       await callResultPromise;
     });
 
-    await waitFor(() => result.current.loading === false);
+    await waitFor(() => result.current.loading === false, { timeout: 10000 });
 
     unmount();
   });
@@ -99,7 +99,7 @@ describe('useHttpsCallable hook', () => {
       callResult = await result.current.testCall();
     });
 
-    await waitFor(() => result.current.loading === false);
+    await waitFor(() => result.current.loading === false, { timeout: 10000 });
 
     expect((result.current.error as FirebaseError)?.code).toBe(
       'functions/not-found'
