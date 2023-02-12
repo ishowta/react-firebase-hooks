@@ -34,7 +34,7 @@ export const useDocument = <T = DocumentData>(
   const { error, loading, setError, setValue, value } = useLoadingValue<
     DocumentSnapshot<T>,
     FirestoreError
-  >(undefined, [ref]);
+  >(undefined, [ref, options?.snapshotListenOptions]);
 
   useEffect(() => {
     if (!ref) {
