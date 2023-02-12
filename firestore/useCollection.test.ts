@@ -591,6 +591,54 @@ describe('useCollection hook', () => {
     }
   );
 
+  test.each(eachAnyOnceUseCollection)(
+    'add document after initialized does not affected to result on $fnName',
+    async ({ useAnyOnceCollection }) => {
+      const ref = collection(firestore, 'test');
+      const docRef = doc(ref);
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [once_data, once_loading, once_error] = useAnyOnceCollection(ref);
+        const [data, loading, error] = useCollectionData(ref);
+        return {
+          once_data,
+          once_loading,
+          once_error,
+          data,
+          loading,
+          error,
+        };
+      });
+
+      await waitFor(
+        () =>
+          result.current.once_loading === false &&
+          result.current.loading === false
+      );
+
+      expect(result.current.once_data).toEqual([]);
+
+      const prevData = result.current.once_data;
+
+      await act(async () => {
+        await setDoc(docRef, { index: 1 });
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.data).toEqual([
+        {
+          index: 1,
+        },
+      ]);
+      expect(result.current.once_error).toBe(undefined);
+      expect(result.current.once_loading).toBe(false);
+      expect(result.current.once_data).toBe(prevData);
+
+      unmount();
+    }
+  );
+
   test.each(eachAnyUseCollection)(
     'consistency between params and result data on $fnName',
     async ({ useAnyCollection }) => {

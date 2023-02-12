@@ -529,6 +529,88 @@ describe('useDocument hook', () => {
     }
   );
 
+  test.each(eachAnyOnceUseDocument)(
+    'create document after initialized does not affected to result $fnName',
+    async ({ useAnyOnceDocument }) => {
+      const ref = doc(collection(firestore, 'test'));
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [once_data, once_loading, once_error] = useAnyOnceDocument(ref);
+        const [data, loading, error] = useDocumentData(ref);
+        return {
+          once_data,
+          once_loading,
+          once_error,
+          data,
+          loading,
+          error,
+        };
+      });
+
+      await waitFor(
+        () =>
+          result.current.once_loading === false &&
+          result.current.loading === false
+      );
+
+      expect(result.current.once_data).toBe(undefined);
+
+      await act(async () => {
+        await setDoc(ref, { index: 1 });
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.data).toEqual({ index: 1 });
+      expect(result.current.once_error).toBe(undefined);
+      expect(result.current.once_loading).toBe(false);
+      expect(result.current.once_data).toBe(undefined);
+
+      unmount();
+    }
+  );
+
+  test.each(eachAnyOnceUseDocument)(
+    'update document after initialized does not affected to result $fnName',
+    async ({ useAnyOnceDocument }) => {
+      const ref = await addDoc(collection(firestore, 'test'), { index: 1 });
+
+      const { result, unmount, waitFor } = renderHook(() => {
+        const [once_data, once_loading, once_error] = useAnyOnceDocument(ref);
+        const [data, loading, error] = useDocumentData(ref);
+        return {
+          once_data,
+          once_loading,
+          once_error,
+          data,
+          loading,
+          error,
+        };
+      });
+
+      await waitFor(
+        () =>
+          result.current.once_loading === false &&
+          result.current.loading === false
+      );
+
+      expect(result.current.once_data).toEqual({ index: 1 });
+
+      await act(async () => {
+        await setDoc(ref, { index: 2 });
+      });
+
+      await waitFor(() => result.current.loading === false);
+
+      expect(result.current.data).toEqual({ index: 2 });
+      expect(result.current.once_error).toBe(undefined);
+      expect(result.current.once_loading).toBe(false);
+      expect(result.current.once_data).toEqual({ index: 1 });
+
+      unmount();
+    }
+  );
+
   test.each(eachAnyNotOnceUseDocument)(
     'reset data and return error after server data was changed to unpermitted on $fnName',
     async ({ useAnyNotOnceDocument }) => {
