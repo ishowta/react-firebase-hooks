@@ -5,18 +5,13 @@ import {
 } from 'firebase/functions';
 import { useCallback, useState } from 'react';
 
-export type HttpsCallableHook<
-  RequestData = unknown,
-  ResponseData = unknown
-> = Readonly<
-  [
-    (
-      data?: RequestData
-    ) => Promise<HttpsCallableResult<ResponseData> | undefined>,
-    boolean,
-    Error | undefined
-  ]
->;
+export type HttpsCallableHook<RequestData = unknown, ResponseData = unknown> = [
+  (
+    data?: RequestData
+  ) => Promise<HttpsCallableResult<ResponseData> | undefined>,
+  boolean,
+  Error | undefined
+];
 
 export default <RequestData = unknown, ResponseData = unknown>(
   functions: Functions,
@@ -46,5 +41,5 @@ export default <RequestData = unknown, ResponseData = unknown>(
     [functions, name]
   );
 
-  return [callCallable, loading, error] as const;
+  return [callCallable, loading, error];
 };
