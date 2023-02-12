@@ -15,6 +15,7 @@ import {
 import { Auth, connectAuthEmulator, getAuth } from 'firebase/auth';
 import { FirebaseApp, initializeApp } from '@firebase/app';
 import { FirebaseStorage } from 'firebase/storage';
+import fetch from 'node-fetch';
 
 export let testEnv: RulesTestEnvironment;
 export let testContext: RulesTestContext;
@@ -63,3 +64,12 @@ beforeAll(async () => {
 afterAll(async () => {
   testEnv.cleanup();
 });
+
+export const clearAuth = async () => {
+  await fetch('http://127.0.0.1:8081/emulator/v1/projects/demo-noop/accounts', {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer owner',
+    },
+  });
+};
