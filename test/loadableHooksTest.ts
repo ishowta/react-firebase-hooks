@@ -33,31 +33,29 @@ export const testLoadableValueHooksCommonCase = <Value>(
     console.log('end');
   });
 
-  // test(`get result in ${name}`, async () => {
-  //   console.log('21');
-  //   const { result, unmount, waitFor } = renderHook(() => {
-  //     const [value, loading, error] = fn();
-  //     return { value, loading, error };
-  //   });
+  test(`get result in ${name}`, async () => {
+    const { result, unmount, waitFor } = renderHook(() => {
+      const [value, loading, error] = fn();
+      return { value, loading, error };
+    });
 
-  //   if (options?.customAction) {
-  //     const customAction = options.customAction;
-  //     await act(async () => {
-  //       await customAction();
-  //     });
-  //   }
+    if (options?.customAction) {
+      const customAction = options.customAction;
+      await act(async () => {
+        await customAction();
+      });
+    }
 
-  //   await act(async () => {
-  //     await waitFor(() => result.current.loading === false);
-  //   });
+    await act(async () => {
+      await waitFor(() => result.current.loading === false);
+    });
 
-  //   expect(result.current.error).toBe(undefined);
-  //   expect(result.current.loading).toBe(false);
-  //   check(result.current.value);
+    expect(result.current.error).toBe(undefined);
+    expect(result.current.loading).toBe(false);
+    check(result.current.value);
 
-  //   unmount();
-  //   console.log('22');
-  // });
+    unmount();
+  });
 
   if (errorTest) {
     test('errors in action with wrong input', async () => {
