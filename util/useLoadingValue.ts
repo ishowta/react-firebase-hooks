@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useChanged } from './useChanged';
 
 export type LoadingValue<T, E> = {
@@ -22,8 +22,9 @@ type ReducerAction<E> = ErrorAction<E> | ResetAction | ValueAction;
 
 const defaultState = (defaultValue?: any) => {
   return {
-    loading: defaultValue === undefined || defaultValue === null,
+    loading: defaultValue === undefined,
     value: defaultValue,
+    error: undefined,
   };
 };
 
@@ -58,7 +59,7 @@ const reducer = <E>() => (
 
 export default <T, E>(
   getDefaultValue?: () => T,
-  deps?: unknown[]
+  deps: unknown[] = []
 ): LoadingValue<T, E> => {
   const defaultValue = getDefaultValue ? getDefaultValue() : undefined;
   const [stateInternal, dispatch] = useReducer(
@@ -79,15 +80,18 @@ export default <T, E>(
     dispatch({ type: 'value', value });
   }, []);
 
+  const isInitialize = useRef(true);
   useEffect(() => {
-    reset();
+    if (isInitialize.current) {
+      isInitialize.current = false;
+    } else {
+      reset();
+    }
   }, deps);
 
   // Reflect the value immediately when deps changed
   const isDepsChanged = useChanged(deps);
-  const state = isDepsChanged
-    ? { value: undefined, loading: true, error: undefined }
-    : stateInternal;
+  const state = isDepsChanged ? defaultState(defaultValue) : stateInternal;
 
   return useMemo(
     () => ({
